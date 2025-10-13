@@ -74,6 +74,18 @@
   font-size: 16px;
 }
 
+.preview-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+  gap: 32px;
+  margin-top: 24px;
+}
+
+.preview-column {
+  display: flex;
+  flex-direction: column;
+}
+
 .asset-preview {
   margin-top: 24px;
   text-align: center;
@@ -144,5 +156,10 @@
 
   .asset-detail-info {
     grid-template-columns: 1fr;
+  }
+
+  .preview-grid {
+    grid-template-columns: 1fr;
+    gap: 24px;
   }
 }

@@ -1,0 +1,126 @@
+.tv-frame {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px;
+  position: relative;
+}
+
+.tv-screen {
+  position: relative;
+  width: 100%;
+  max-width: 600px;
+  aspect-ratio: 16 / 9;
+  background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow:
+    0 10px 40px rgba(0, 0, 0, 0.4),
+    inset 0 2px 4px rgba(255, 255, 255, 0.1),
+    inset 0 -2px 4px rgba(0, 0, 0, 0.3);
+  border: 3px solid #333;
+  overflow: hidden;
+}
+
+.tv-content {
+  width: 100%;
+  height: 100%;
+  background: #000;
+  border-radius: 6px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  z-index: 1;
+}
+
+.tv-content img,
+.tv-content video {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+.tv-reflection {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  right: 20px;
+  bottom: 20px;
+  background: linear-gradient(135deg,
+      rgba(255, 255, 255, 0.05) 0%,
+      transparent 50%,
+      rgba(255, 255, 255, 0.02) 100%);
+  border-radius: 6px;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.tv-stand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: -5px;
+}
+
+.tv-stand-neck {
+  width: 80px;
+  height: 30px;
+  background: linear-gradient(to bottom, #2d2d2d, #1a1a1a);
+  border-radius: 0 0 8px 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.tv-stand-base {
+  width: 200px;
+  height: 15px;
+  background: linear-gradient(to bottom, #2d2d2d, #1a1a1a);
+  border-radius: 8px;
+  margin-top: 5px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.tv-label {
+  margin-top: 16px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #495057;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+/* Loading and error states inside TV */
+.tv-content .loading,
+.tv-content .error-message,
+.tv-content .empty-state {
+  color: #fff;
+  padding: 20px;
+  text-align: center;
+}
+
+.tv-content .error-message {
+  background-color: rgba(248, 215, 218, 0.2);
+  color: #f8d7da;
+  border: 1px solid rgba(245, 198, 203, 0.3);
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .tv-screen {
+    max-width: 100%;
+    padding: 15px;
+  }
+
+  .tv-stand-neck {
+    width: 60px;
+    height: 25px;
+  }
+
+  .tv-stand-base {
+    width: 150px;
+    height: 12px;
+  }
+}

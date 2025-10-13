@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import useAssetStatus from '../hooks/useAssetStatus';
-import { getAssetURL } from '../services/assetApi';
+import { getAssetURLs } from '../services/assetApi';
 import AssetStatus from '../components/AssetStatus';
+import TVFrame from '../components/TVFrame';
 import Navbar from '../components/Navbar';
 import './AssetDetailPage.css';
 
@@ -10,7 +11,7 @@ const AssetDetailPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { asset, loading, error } = useAssetStatus(id);
-  const [assetURL, setAssetURL] = useState(null);
+  const [assetURLs, setAssetURLs] = useState({ inputURL: null, outputURL: null });
   const [urlLoading, setUrlLoading] = useState(false);
   const [urlError, setUrlError] = useState(null);
 
@@ -22,25 +23,25 @@ const AssetDetailPage = () => {
     return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
   };
 
-  // Fetch presigned URL when asset is loaded
+  // Fetch presigned URLs when asset is loaded
   useEffect(() => {
-    const fetchAssetURL = async () => {
+    const fetchAssetURLs = async () => {
       if (!asset || !asset.id) return;
 
       try {
         setUrlLoading(true);
         setUrlError(null);
-        const url = await getAssetURL(asset.id, 60); // 60 minutes expiration
-        setAssetURL(url);
+        const urls = await getAssetURLs(asset.id, 60); // 60 minutes expiration
+        setAssetURLs(urls);
       } catch (err) {
-        console.error('Error fetching asset URL:', err);
+        console.error('Error fetching asset URLs:', err);
         setUrlError(err.message || 'Failed to load asset preview');
       } finally {
         setUrlLoading(false);
       }
     };
 
-    fetchAssetURL();
+    fetchAssetURLs();
   }, [asset]);
 
   if (loading) {
@@ -86,6 +87,52 @@ const AssetDetailPage = () => {
     );
   }
 
+  const renderPreviewContent = (url, contentType) => {
+    if (!url) {
+      return <div className="empty-state"><p>No preview available</p></div>;
+    }
+
+    if (contentType?.startsWith('image/')) {
+      return (
+        <img
+          src={url}
+          alt="Preview"
+          onError={(e) => {
+            e.target.style.display = 'none';
+            e.target.nextSibling.style.display = 'block';
+          }}
+        />
+      );
+    } else if (contentType?.startsWith('video/')) {
+      return (
+        <video
+          controls
+          src={url}
+          onError={(e) => {
+            e.target.style.display = 'none';
+            e.target.nextSibling.style.display = 'block';
+          }}
+        >
+          Your browser does not support the video tag.
+        </video>
+      );
+    } else {
+      return (
+        <div className="preview-unavailable">
+          <p>Preview not available for this file type</p>
+          <a
+            href={url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="btn-primary"
+          >
+            Download File
+          </a>
+        </div>
+      );
+    }
+  };
+
   return (
     <div className="asset-detail-page">
       <Navbar />
@@ -125,6 +172,12 @@ const AssetDetailPage = () => {
                 <label>Uploaded At</label>
                 <span>{new Date(asset.uploaded_at || asset.created_at).toLocaleString()}</span>
               </div>
+              {asset.processed_at && (
+                <div className="asset-detail-field">
+                  <label>Processed At</label>
+                  <span>{new Date(asset.processed_at).toLocaleString()}</span>
+                </div>
+              )}
               <div className="asset-detail-field">
                 <label>Last Updated</label>
                 <span>{new Date(asset.updated_at).toLocaleString()}</span>
@@ -140,75 +193,75 @@ const AssetDetailPage = () => {
                 <span>{asset.s3_bucket}</span>
               </div>
               <div className="asset-detail-field">
-                <label>S3 Key</label>
+                <label>Input S3 Key</label>
                 <span style={{ wordBreak: 'break-all' }}>{asset.s3_key}</span>
               </div>
-            </div>
-          </div>
-
-          <div className="asset-detail-section">
-            <h2>Asset Preview</h2>
-            <div className="asset-preview">
-              {urlLoading ? (
-                <div className="loading">Loading preview...</div>
-              ) : urlError ? (
-                <div className="error-message">
-                  <p>{urlError}</p>
-                </div>
-              ) : assetURL ? (
-                <>
-                  {asset.content_type?.startsWith('image/') ? (
-                    <img
-                      src={assetURL}
-                      alt={asset.file_name}
-                      onError={(e) => {
-                        e.target.style.display = 'none';
-                        e.target.nextSibling.style.display = 'block';
-                      }}
-                    />
-                  ) : asset.content_type?.startsWith('video/') ? (
-                    <video
-                      controls
-                      src={assetURL}
-                      onError={(e) => {
-                        e.target.style.display = 'none';
-                        e.target.nextSibling.style.display = 'block';
-                      }}
-                    >
-                      Your browser does not support the video tag.
-                    </video>
-                  ) : (
-                    <div className="preview-unavailable">
-                      <p>Preview not available for this file type</p>
-                      <a
-                        href={assetURL}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="btn-primary"
-                      >
-                        Download File
-                      </a>
-                    </div>
-                  )}
-                  <div style={{ display: 'none', textAlign: 'center', padding: '20px' }}>
-                    <p>Failed to load preview</p>
-                    <a
-                      href={assetURL}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="btn-primary"
-                    >
-                      Download File
-                    </a>
-                  </div>
-                </>
-              ) : (
-                <div className="empty-state">
-                  <p>No preview available</p>
+              {asset.output_s3_key && (
+                <div className="asset-detail-field">
+                  <label>Output S3 Key</label>
+                  <span style={{ wordBreak: 'break-all' }}>{asset.output_s3_key}</span>
                 </div>
               )}
             </div>
           </div>
+
+          {urlLoading ? (
+            <div className="asset-detail-section">
+              <div className="loading">Loading previews...</div>
+            </div>
+          ) : urlError ? (
+            <div className="asset-detail-section">
+              <div className="error-message">
+                <p>{urlError}</p>
+              </div>
+            </div>
+          ) : (
+            <div className="preview-grid">
+              <div className="preview-column">
+                <div className="asset-detail-section">
+                  <h2>Asset Preview</h2>
+                  <div className="asset-preview">
+                    {renderPreviewContent(assetURLs.inputURL, asset.content_type)}
+                    <div style={{ display: 'none', textAlign: 'center', padding: '20px' }}>
+                      <p>Failed to load preview</p>
+                      {assetURLs.inputURL && (
+                        <a
+                          href={assetURLs.inputURL}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="btn-primary"
+                        >
+                          Download File
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {assetURLs.outputURL && asset.status === 'processed' && (
+                <div className="preview-column">
+                  <div className="asset-detail-section">
+                    <h2>Screensaver Preview</h2>
+                    <TVFrame title="Screensaver Ad Output">
+                      {renderPreviewContent(assetURLs.outputURL, asset.content_type)}
+                      <div style={{ display: 'none', textAlign: 'center', padding: '20px' }}>
+                        <p>Failed to load output</p>
+                        <a
+                          href={assetURLs.outputURL}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="btn-primary"
+                        >
+                          Download Output
+                        </a>
+                      </div>
+                    </TVFrame>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </div>
