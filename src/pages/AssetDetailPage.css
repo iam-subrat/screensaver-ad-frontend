@@ -80,6 +80,10 @@
   background-color: #f8f9fa;
   padding: 24px;
   border-radius: 8px;
+  min-height: 200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .asset-preview img,
@@ -88,6 +92,40 @@
   max-height: 600px;
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.asset-preview .loading {
+  padding: 40px;
+  color: #6c757d;
+}
+
+.asset-preview .error-message {
+  background-color: #f8d7da;
+  color: #721c24;
+  padding: 16px 20px;
+  border-radius: 6px;
+  border: 1px solid #f5c6cb;
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+.asset-preview .error-message p {
+  margin: 0;
+}
+
+.preview-unavailable {
+  text-align: center;
+  padding: 40px;
+}
+
+.preview-unavailable p {
+  color: #6c757d;
+  margin-bottom: 20px;
+  font-size: 16px;
+}
+
+.preview-unavailable .btn-primary {
+  display: inline-block;
 }
 
 @media (max-width: 768px) {

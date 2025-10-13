@@ -114,3 +114,26 @@ export const deleteAsset = async (id) => {
     throw error;
   }
 };
+
+/**
+ * Get presigned URL for an asset
+ */
+export const getAssetURL = async (id, expirationMinutes = 60) => {
+  try {
+    const response = await fetch(
+      `${API_BASE_URL}/assets/${id}/url?expiration=${expirationMinutes}`
+    );
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to get asset URL');
+    }
+
+    const result = await response.json();
+    // Backend returns { url: string, expires_in: number }
+    return result.url;
+  } catch (error) {
+    console.error(`Error getting asset ${id} URL:`, error);
+    throw error;
+  }
+};

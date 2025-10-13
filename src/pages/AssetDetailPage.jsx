@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import useAssetStatus from '../hooks/useAssetStatus';
+import { getAssetURL } from '../services/assetApi';
 import AssetStatus from '../components/AssetStatus';
 import Navbar from '../components/Navbar';
 import './AssetDetailPage.css';
@@ -9,6 +10,9 @@ const AssetDetailPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { asset, loading, error } = useAssetStatus(id);
+  const [assetURL, setAssetURL] = useState(null);
+  const [urlLoading, setUrlLoading] = useState(false);
+  const [urlError, setUrlError] = useState(null);
 
   // Format file size
   const formatFileSize = (bytes) => {
@@ -17,6 +21,27 @@ const AssetDetailPage = () => {
     if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(2)} KB`;
     return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
   };
+
+  // Fetch presigned URL when asset is loaded
+  useEffect(() => {
+    const fetchAssetURL = async () => {
+      if (!asset || !asset.id) return;
+
+      try {
+        setUrlLoading(true);
+        setUrlError(null);
+        const url = await getAssetURL(asset.id, 60); // 60 minutes expiration
+        setAssetURL(url);
+      } catch (err) {
+        console.error('Error fetching asset URL:', err);
+        setUrlError(err.message || 'Failed to load asset preview');
+      } finally {
+        setUrlLoading(false);
+      }
+    };
+
+    fetchAssetURL();
+  }, [asset]);
 
   if (loading) {
     return (
@@ -121,43 +146,69 @@ const AssetDetailPage = () => {
             </div>
           </div>
 
-          {asset.status === 'processed' && (
-            <div className="asset-detail-section">
-              <h2>Asset Preview</h2>
-              <div className="asset-preview">
-                {asset.content_type?.startsWith('image/') ? (
-                  <img
-                    src={`https://${asset.s3_bucket}.s3.amazonaws.com/${asset.s3_key}`}
-                    alt={asset.file_name}
-                    onError={(e) => {
-                      e.target.style.display = 'none';
-                      e.target.nextSibling.style.display = 'block';
-                    }}
-                  />
-                ) : asset.content_type?.startsWith('video/') ? (
-                  <video
-                    controls
-                    src={`https://${asset.s3_bucket}.s3.amazonaws.com/${asset.s3_key}`}
-                    onError={(e) => {
-                      e.target.style.display = 'none';
-                      e.target.nextSibling.style.display = 'block';
-                    }}
-                  />
-                ) : null}
-                <div style={{ display: 'none', textAlign: 'center', padding: '20px' }}>
-                  <p>Preview not available</p>
+          <div className="asset-detail-section">
+            <h2>Asset Preview</h2>
+            <div className="asset-preview">
+              {urlLoading ? (
+                <div className="loading">Loading preview...</div>
+              ) : urlError ? (
+                <div className="error-message">
+                  <p>{urlError}</p>
                 </div>
-              </div>
+              ) : assetURL ? (
+                <>
+                  {asset.content_type?.startsWith('image/') ? (
+                    <img
+                      src={assetURL}
+                      alt={asset.file_name}
+                      onError={(e) => {
+                        e.target.style.display = 'none';
+                        e.target.nextSibling.style.display = 'block';
+                      }}
+                    />
+                  ) : asset.content_type?.startsWith('video/') ? (
+                    <video
+                      controls
+                      src={assetURL}
+                      onError={(e) => {
+                        e.target.style.display = 'none';
+                        e.target.nextSibling.style.display = 'block';
+                      }}
+                    >
+                      Your browser does not support the video tag.
+                    </video>
+                  ) : (
+                    <div className="preview-unavailable">
+                      <p>Preview not available for this file type</p>
+                      <a
+                        href={assetURL}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="btn-primary"
+                      >
+                        Download File
+                      </a>
+                    </div>
+                  )}
+                  <div style={{ display: 'none', textAlign: 'center', padding: '20px' }}>
+                    <p>Failed to load preview</p>
+                    <a
+                      href={assetURL}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="btn-primary"
+                    >
+                      Download File
+                    </a>
+                  </div>
+                </>
+              ) : (
+                <div className="empty-state">
+                  <p>No preview available</p>
+                </div>
+              )}
             </div>
-          )}
-
-          {asset.status === 'uploaded' && (
-            <div className="asset-detail-section">
-              <div className="empty-state">
-                <p>Asset is uploaded and is being processed.</p>
-              </div>
-            </div>
-          )}
+          </div>
         </div>
       </div>
     </div>
