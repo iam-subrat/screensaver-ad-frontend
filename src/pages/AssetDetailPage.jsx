@@ -10,6 +10,14 @@ const AssetDetailPage = () => {
   const navigate = useNavigate();
   const { asset, loading, error } = useAssetStatus(id);
 
+  // Format file size
+  const formatFileSize = (bytes) => {
+    if (!bytes) return 'N/A';
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(2)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+  };
+
   if (loading) {
     return (
       <div className="asset-detail-page">
@@ -42,7 +50,7 @@ const AssetDetailPage = () => {
       <div className="asset-detail-page">
         <Navbar />
         <div className="container">
-          <div className="error">
+          <div className="empty-state">
             <p>Asset not found</p>
             <button onClick={() => navigate('/')} className="btn-primary">
               Back to Assets
@@ -57,75 +65,97 @@ const AssetDetailPage = () => {
     <div className="asset-detail-page">
       <Navbar />
       <div className="container">
-        <button onClick={() => navigate('/')} className="btn-back">
-          ← Back to Assets
-        </button>
-        
-        <div className="asset-detail">
-          <div className="asset-header">
-            <h1>{asset.name || `Asset ${asset.id}`}</h1>
-            <AssetStatus status={asset.status} />
+        <div className="asset-detail-header">
+          <h1>{asset.file_name || `Asset ${asset.id}`}</h1>
+          <button onClick={() => navigate('/')} className="btn-secondary">
+            ← Back to Assets
+          </button>
+        </div>
+
+        <div className="asset-detail-content">
+          <div className="asset-detail-section">
+            <h2>Asset Information</h2>
+            <div className="asset-detail-info">
+              <div className="asset-detail-field">
+                <label>Asset ID</label>
+                <span>{asset.id}</span>
+              </div>
+              <div className="asset-detail-field">
+                <label>File Name</label>
+                <span>{asset.file_name}</span>
+              </div>
+              <div className="asset-detail-field">
+                <label>Content Type</label>
+                <span>{asset.content_type}</span>
+              </div>
+              <div className="asset-detail-field">
+                <label>File Size</label>
+                <span>{formatFileSize(asset.file_size)}</span>
+              </div>
+              <div className="asset-detail-field">
+                <label>Status</label>
+                <AssetStatus status={asset.status} />
+              </div>
+              <div className="asset-detail-field">
+                <label>Uploaded At</label>
+                <span>{new Date(asset.uploaded_at || asset.created_at).toLocaleString()}</span>
+              </div>
+              <div className="asset-detail-field">
+                <label>Last Updated</label>
+                <span>{new Date(asset.updated_at).toLocaleString()}</span>
+              </div>
+            </div>
           </div>
 
-          <div className="asset-info">
-            <div className="info-item">
-              <label>Asset ID:</label>
-              <span>{asset.id}</span>
-            </div>
-            <div className="info-item">
-              <label>Created:</label>
-              <span>{new Date(asset.createdAt).toLocaleString()}</span>
-            </div>
-            <div className="info-item">
-              <label>Status:</label>
-              <span className={`status-${asset.status}`}>{asset.status}</span>
-            </div>
-            {asset.fileType && (
-              <div className="info-item">
-                <label>File Type:</label>
-                <span>{asset.fileType}</span>
+          <div className="asset-detail-section">
+            <h2>Storage Information</h2>
+            <div className="asset-detail-info">
+              <div className="asset-detail-field">
+                <label>S3 Bucket</label>
+                <span>{asset.s3_bucket}</span>
               </div>
-            )}
-            {asset.fileSize && (
-              <div className="info-item">
-                <label>File Size:</label>
-                <span>{(asset.fileSize / 1024).toFixed(2)} KB</span>
+              <div className="asset-detail-field">
+                <label>S3 Key</label>
+                <span style={{ wordBreak: 'break-all' }}>{asset.s3_key}</span>
               </div>
-            )}
+            </div>
           </div>
 
-          {asset.status === 'ready' && asset.adUrl && (
-            <div className="ad-preview">
-              <h2>Ad Preview</h2>
-              <div className="ad-container">
-                {asset.fileType?.startsWith('image/') ? (
-                  <img src={asset.adUrl} alt="Generated Ad" />
-                ) : asset.fileType?.startsWith('video/') ? (
-                  <video controls src={asset.adUrl} />
-                ) : (
-                  <div className="ad-placeholder">
-                    <a href={asset.adUrl} target="_blank" rel="noopener noreferrer">
-                      View Ad
-                    </a>
-                  </div>
-                )}
+          {asset.status === 'processed' && (
+            <div className="asset-detail-section">
+              <h2>Asset Preview</h2>
+              <div className="asset-preview">
+                {asset.content_type?.startsWith('image/') ? (
+                  <img
+                    src={`https://${asset.s3_bucket}.s3.amazonaws.com/${asset.s3_key}`}
+                    alt={asset.file_name}
+                    onError={(e) => {
+                      e.target.style.display = 'none';
+                      e.target.nextSibling.style.display = 'block';
+                    }}
+                  />
+                ) : asset.content_type?.startsWith('video/') ? (
+                  <video
+                    controls
+                    src={`https://${asset.s3_bucket}.s3.amazonaws.com/${asset.s3_key}`}
+                    onError={(e) => {
+                      e.target.style.display = 'none';
+                      e.target.nextSibling.style.display = 'block';
+                    }}
+                  />
+                ) : null}
+                <div style={{ display: 'none', textAlign: 'center', padding: '20px' }}>
+                  <p>Preview not available</p>
+                </div>
               </div>
             </div>
           )}
 
-          {asset.status === 'processing' && (
-            <div className="processing-message">
-              <p>Your asset is being processed. The ad will be available soon.</p>
-              <div className="spinner"></div>
-            </div>
-          )}
-
-          {asset.status === 'failed' && (
-            <div className="error-message">
-              <p>Processing failed. Please try uploading again.</p>
-              <button onClick={() => navigate('/upload')} className="btn-primary">
-                Upload New Asset
-              </button>
+          {asset.status === 'uploaded' && (
+            <div className="asset-detail-section">
+              <div className="empty-state">
+                <p>Asset is uploaded and is being processed.</p>
+              </div>
             </div>
           )}
         </div>

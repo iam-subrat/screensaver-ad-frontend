@@ -2,10 +2,9 @@ import { useState, useEffect, useCallback } from 'react';
 import { fetchAssetById } from '../services/assetApi';
 
 /**
- * Custom hook to poll asset status
- * Automatically polls the asset status every 5 seconds if status is 'processing'
+ * Custom hook to fetch and manage asset status
  */
-const useAssetStatus = (assetId, pollingInterval = 5000) => {
+const useAssetStatus = (assetId) => {
   const [asset, setAsset] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -29,24 +28,8 @@ const useAssetStatus = (assetId, pollingInterval = 5000) => {
   }, [assetId]);
 
   useEffect(() => {
-    // Initial fetch
     fetchAsset();
-
-    // Set up polling if status is processing
-    let intervalId;
-    if (asset?.status === 'processing') {
-      intervalId = setInterval(() => {
-        fetchAsset();
-      }, pollingInterval);
-    }
-
-    // Cleanup
-    return () => {
-      if (intervalId) {
-        clearInterval(intervalId);
-      }
-    };
-  }, [fetchAsset, asset?.status, pollingInterval]);
+  }, [fetchAsset]);
 
   return {
     asset,

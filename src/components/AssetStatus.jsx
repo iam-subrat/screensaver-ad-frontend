@@ -2,30 +2,20 @@ import React from 'react';
 import './AssetStatus.css';
 
 const statusConfig = {
-  pending: {
-    label: 'Pending',
+  uploaded: {
+    label: 'Uploaded',
     className: 'status-pending',
     icon: '⏳'
   },
-  processing: {
-    label: 'Processing',
-    className: 'status-processing',
-    icon: '⚙️'
-  },
-  ready: {
-    label: 'Ready',
-    className: 'status-ready',
+  processed: {
+    label: 'Processed',
+    className: 'status-approved',
     icon: '✓'
-  },
-  failed: {
-    label: 'Failed',
-    className: 'status-failed',
-    icon: '✗'
   }
 };
 
 const AssetStatus = ({ status }) => {
-  const config = statusConfig[status] || statusConfig.pending;
+  const config = statusConfig[status] || statusConfig.uploaded;
 
   return (
     <div className={`asset-status ${config.className}`}>

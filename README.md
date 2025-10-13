@@ -6,8 +6,8 @@ A React-based frontend application for managing and generating screensaver ads. 
 
 - **Asset Management**: View all uploaded assets in a grid or list view
 - **Asset Upload**: Upload image and video files for ad generation
-- **Status Tracking**: Real-time polling of asset processing status
-- **Ad Preview**: View generated ads once processing is complete
+- **Status Tracking**: Monitor asset processing status
+- **Asset Details**: View detailed information about uploaded assets
 - **Responsive Design**: Modern UI with navigation and routing
 
 ## Project Structure
@@ -28,7 +28,7 @@ src/
 ├── services/           # API service layer
 │   └── assetApi.js     # API calls for asset operations
 ├── hooks/              # Custom React hooks
-│   └── useAssetStatus.js # Hook for polling asset status
+│   └── useAssetStatus.js # Hook for fetching asset status
 ├── App.js              # Main app component with routing
 ├── App.css             # Global styles
 ├── index.js            # Application entry point
@@ -46,11 +46,8 @@ src/
 2. Install dependencies:
    ```bash
    npm install
-   ```
-
-3. Install React Router (if not already installed):
-   ```bash
-   npm install react-router-dom
+   # or
+   pnpm install
    ```
 
 ## Configuration
@@ -58,7 +55,7 @@ src/
 Set the backend API URL in your environment:
 
 ```bash
-REACT_APP_API_URL=http://localhost:3001/api
+REACT_APP_API_URL=http://localhost:8080/api
 ```
 
 Or update the default in `src/services/assetApi.js`.
@@ -71,6 +68,8 @@ Start the development server:
 
 ```bash
 npm start
+# or
+pnpm start
 ```
 
 The application will open at `http://localhost:3000`.
@@ -81,12 +80,14 @@ Create an optimized production build:
 
 ```bash
 npm run build
+# or
+pnpm build
 ```
 
 ## Application Routes
 
 - `/` - Asset List Page (displays all assets)
-- `/asset/:id` - Asset Detail Page (shows individual asset details and ad preview)
+- `/asset/:id` - Asset Detail Page (shows individual asset details)
 - `/upload` - Upload Page (upload new creative assets)
 
 ## Component Documentation
@@ -94,13 +95,13 @@ npm run build
 ### Pages
 
 - **AssetListPage**: Displays all assets with grid/list view toggle. Links to asset details and upload page.
-- **AssetDetailPage**: Shows detailed asset information, polls status, and displays the generated ad when ready.
+- **AssetDetailPage**: Shows detailed asset information including file metadata and storage details.
 - **UploadPage**: Provides file upload interface with drag-and-drop support. Redirects to detail page on successful upload.
 
 ### Components
 
 - **AssetCard**: Reusable card component for displaying asset preview and metadata
-- **AssetStatus**: Visual status indicator (pending, processing, ready, failed)
+- **AssetStatus**: Visual status indicator (uploaded, processed)
 - **FileUpload**: Drag-and-drop file upload component with validation
 - **Navbar**: Application navigation bar with active route highlighting
 
@@ -110,37 +111,66 @@ npm run build
   - Fetching all assets
   - Fetching asset by ID
   - Uploading new assets
+  - Updating asset status
   - Deleting assets
 
 ### Hooks
 
 - **useAssetStatus**: Custom hook that:
   - Fetches asset data by ID
-  - Automatically polls every 5 seconds if status is 'processing'
   - Provides loading and error states
   - Includes manual refetch functionality
 
 ## API Integration
 
-The application expects the following backend endpoints:
+The application integrates with a Go backend and expects the following endpoints:
 
-- `GET /api/assets` - Fetch all assets
+### Endpoints
+
+- `GET /api/assets` - Fetch all assets (with pagination)
 - `GET /api/assets/:id` - Fetch single asset
-- `POST /api/assets/upload` - Upload new asset
+- `POST /api/assets` - Upload new asset (multipart/form-data)
+- `PATCH /api/assets/:id/status` - Update asset status
 - `DELETE /api/assets/:id` - Delete asset
 
-### Expected Asset Schema
+### Backend Asset Schema
+
+The backend returns assets with the following structure:
 
 ```json
 {
-  "id": "string",
-  "name": "string",
-  "status": "pending|processing|ready|failed",
-  "fileType": "string",
-  "fileSize": "number",
-  "createdAt": "ISO date string",
-  "thumbnailUrl": "string (optional)",
-  "adUrl": "string (when status is ready)"
+  "id": 1,
+  "file_name": "example.jpg",
+  "file_size": 1024000,
+  "content_type": "image/jpeg",
+  "s3_key": "uploads/2024/01/example.jpg",
+  "s3_bucket": "my-bucket",
+  "status": "uploaded",
+  "uploaded_at": "2024-01-01T12:00:00Z",
+  "created_at": "2024-01-01T12:00:00Z",
+  "updated_at": "2024-01-01T12:00:00Z"
+}
+```
+
+### Status Values
+
+- `uploaded` - Asset has been uploaded to S3
+- `processed` - Asset has been processed
+
+### Upload Request
+
+The upload endpoint expects a multipart form with:
+- `file` - The file to upload (required)
+- `name` - Optional name for the file (defaults to filename)
+
+### List Assets Response
+
+```json
+{
+  "assets": [...],
+  "total": 100,
+  "limit": 10,
+  "offset": 0
 }
 ```
 
@@ -170,6 +200,17 @@ The application expects the following backend endpoints:
 2. Follow naming convention: `use[HookName].js`
 3. Export as default
 
+## Backend Integration
+
+This frontend is designed to work with the Go backend located in `../backend`. The backend provides:
+
+- PostgreSQL database for asset metadata
+- S3 integration for file storage
+- RESTful API endpoints
+- CORS support for frontend communication
+
+Make sure the backend is running on `http://localhost:8080` or update the `REACT_APP_API_URL` environment variable accordingly.
+
 ## Future Enhancements
 
 - Add authentication and user management
@@ -178,6 +219,8 @@ The application expects the following backend endpoints:
 - Include asset analytics and metrics
 - Add dark mode support
 - Implement asset sharing capabilities
+- Add image/video preview thumbnails
+- Implement asset processing pipeline integration
 
 ## License
 
